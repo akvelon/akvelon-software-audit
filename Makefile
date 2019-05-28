@@ -1,8 +1,11 @@
 build:
 	go build -o myapp . && cd cmd && go build .
 
+test:
+	go test -cover ./internals/vcs
+
 start:
-	akvelon-software-audit
+	bee run
 
 clean:
 	rm myapp && rm ./cmd/cmd

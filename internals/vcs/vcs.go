@@ -14,36 +14,35 @@ import (
 // Repository reporesents a repository will be audited
 type Repository internals.Repository
 
-// Download takes a user-provided string that represents a remote
-// Go repository, and attempts to download it in a way similar to go get.
-func (r *Repository) Download(dest string) (root *vcs.RepoRoot, err error) {
+// Download takes a user-provided string that represents a destination to.
+func (r *Repository) Download(dest string) (fullLocalPath string, err error) {
 	return download(r.URL, dest, true)
 }
 
-func download(path, dest string, firstAttempt bool) (root *vcs.RepoRoot, err error) {
+func download(path, dest string, firstAttempt bool) (fullPath string, err error) {
 	vcs.ShowCmd = true
 
 	path, err = Clean(path)
 	if err != nil {
-		return root, err
+		return "", err
 	}
 
-	root, err = vcs.RepoRootForImportPath(path, true)
+	root, err := vcs.RepoRootForImportPath(path, true)
 	if err != nil {
-		return root, err
+		return "", err
 	}
 
 	localDirPath := filepath.Join(dest, root.Root, "..")
 
 	err = os.MkdirAll(localDirPath, 0777)
 	if err != nil {
-		return root, err
+		return "", err
 	}
 
 	fullLocalPath := filepath.Join(dest, root.Root)
 	ex, err := exists(fullLocalPath)
 	if err != nil {
-		return root, err
+		return "", err
 	}
 	if ex {
 		log.Println("Update", root.Repo)
@@ -57,7 +56,7 @@ func download(path, dest string, firstAttempt bool) (root *vcs.RepoRoot, err err
 			}
 			return download(path, dest, false)
 		} else if err != nil {
-			return root, err
+			return "", err
 		}
 	} else {
 		log.Println("Create", root.Repo)
@@ -69,10 +68,10 @@ func download(path, dest string, firstAttempt bool) (root *vcs.RepoRoot, err err
 		var rootRepo = root.Repo
 		err = root.VCS.Create(fullLocalPath, rootRepo)
 		if err != nil {
-			return root, err
+			return "", err
 		}
 	}
-	return root, err
+	return fullLocalPath, err
 }
 
 // Clean trims any URL parts, like the scheme or username, that might be present

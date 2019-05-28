@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,21 +13,23 @@ func TestRepoRootForImportPath(t *testing.T) {
 	cases := []struct {
 		giveURL  string
 		wantPath string
-		wantVCS  string
 	}{
-		{"github.com/akvelon/PowerBI-Stacked-Column-Chart", "github.com/akvelon/PowerBI-Stacked-Column-Chart", "git"},
+		{"github.com/akvelon/PowerBI-Stacked-Column-Chart", "github.com/akvelon/PowerBI-Stacked-Column-Chart"},
 	}
 
 	for _, tt := range cases {
 		repo := Repository{tt.giveURL}
 
-		root, err := repo.Download(testDownloadDir)
+		fullPath, err := repo.Download(testDownloadDir)
 		if err != nil {
 			t.Fatalf("Error calling Download(%q): %v", tt.giveURL, err)
 		}
 
-		if root.Root != tt.wantPath {
-			t.Errorf("Download(%q): root.Repo = %q, want %q", tt.giveURL, root.Repo, tt.wantPath)
+		fmt.Printf("fullPath at: %s\n", fullPath)
+		fmt.Printf("wantPath at: %s\n", filepath.Join(testDownloadDir, tt.wantPath))
+
+		if fullPath != filepath.Join(testDownloadDir, tt.wantPath) {
+			t.Errorf("Download(%q): root.Repo = %q, want %q", tt.giveURL, fullPath, tt.wantPath)
 		}
 
 		wantPath := filepath.Join(testDownloadDir, tt.wantPath)
