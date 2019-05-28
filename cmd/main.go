@@ -6,22 +6,27 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 var (
-	dir = flag.String("repo", "", "URL of remote repository")
+	repo = flag.String("repo", "", "URL of remote repository")
 )
 
-// CLIDest is a predefined folder to download repos
-const CLIDest = "CLIRepos"
+var reposDest = filepath.Join("..", "_repos")
 
 func main() {
 	flag.Parse()
-	repo := vcs.Repository{URL: *dir}
+	if *repo == "" {
+		log.Println("Usage: ./cmd -repo `github-repo-url`")
+		return
+	}
 
-	fullLocalPath, err := repo.Download(CLIDest)
+	repository := vcs.Repository{URL: *repo}
+	fullLocalPath, err := repository.Download(reposDest)
+
 	if err != nil {
-		log.Fatalf("Fatal error downloading %s: %s", *dir, err.Error())
+		log.Fatalf("Fatal error downloading %s: %s", *repo, err.Error())
 		os.Exit(1)
 	}
 

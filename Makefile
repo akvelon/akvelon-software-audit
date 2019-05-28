@@ -8,4 +8,4 @@ start:
 	bee run
 
 clean:
-	rm myapp && rm ./cmd/cmd
+	rm myapp && rm akvelon-software-audit && rm ./cmd/cmd
