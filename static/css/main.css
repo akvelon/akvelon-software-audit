@@ -1,0 +1,131 @@
+body, button, input, select, textarea {
+    font-family: "Helvetica Neue","Helvetica","Arial",sans-serif;
+    margin: 0;
+}
+
+.container {
+    margin: 0 auto;
+    max-width: 960px;
+}
+
+.header {
+    background: white;
+    background-color: #2E303A;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    line-height: 24px;
+    position: relative;
+    text-align: center;
+    z-index: 2;
+}
+
+.header .container {
+    -webkit-box-align: stretch;
+    -webkit-align-items: stretch;
+    -ms-flex-align: stretch;
+    align-items: stretch;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    width: 100%;
+    margin: 0 auto;
+    max-width: 960px;
+}
+
+.footer {
+    background: #f5f7fa;
+    padding: 40px 20px 40px;
+    color: #69707a;
+}
+
+.has-text-centered {
+    text-align: center;
+}
+
+.landing-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: repeat-x url('/static/images/houses.svg') 0 100%;
+    opacity: .35;
+    mix-blend-mode: soft-light;
+    min-height: 300px;
+    z-index: -1
+}
+
+.main-content {
+    position: relative;
+    min-height:300px;
+}
+
+.title {
+    font-size: 1.5em;
+    color: #fff;
+    line-height: 1;
+    font-weight: 300;
+    word-break: break-word;
+}
+
+.title:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.header-item a, a.header-item {
+    color: #69707a;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.subtitle {
+    font-size: 1.5em;
+    font-weight: 300;
+    color: black;
+
+}
+
+.btn {
+    font-weight: 200;
+    font-size: 16px;
+    height: 30px;
+    padding: 2px 4px;
+}
+
+.btn:hover {
+    border-color: #aeb1b5;
+    color: #222324;
+}
+
+.input-box {
+    padding: 0.5em;
+    min-width: 350px;
+}
+
+.section {
+    background: white;
+}
+
+.table {
+    background: white;
+    color: #222324;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.table td, .table th {
+    border: 1px solid #d3d6db;
+    border-width: 0 0 1px;
+    padding: 8px 10px;
+    vertical-align: top;
+}
+
+.table thead th {
+    border-width: 0 0 2px;
+    color: #aeb1b5;
+    text-align: left;
+    padding: 8px 10px;
+    vertical-align: top;
+}

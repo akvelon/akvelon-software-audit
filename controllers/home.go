@@ -9,6 +9,9 @@ type MainController struct {
 }
 
 func (this *MainController) Get() {
-	this.Data["Website"] = "beego.me"
-	this.Data["Email"] = "astaxie@gmail.com"
+	this.Layout = "layout_main.tpl"
+	this.LayoutSections = make(map[string]string)
+
+	this.LayoutSections["Header"] = "header.tpl"
+	this.LayoutSections["Footer"] = "footer.tpl"
 }
