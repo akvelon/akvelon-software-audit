@@ -9,3 +9,6 @@ start:
 
 clean:
 	rm myapp && rm akvelon-software-audit && rm ./cmd/cmd
+
+cleanGHRepos:
+	cd _repos && rm -rf github.com/ 

@@ -14,8 +14,9 @@
         <div class="landing-content landing-content"></div>
         <div class="container">
             <h2 class="subtitle">
-                Enter the <strong>link</strong> to the GitHub repository to analyze:
+                Enter the <strong>link</strong> of the GitHub repository to analyze:
             </h2>
+            {{.LayoutContent}}
             <form method="POST" action="/analyze" id="check_form">
                     <div>
                         <p>
@@ -38,7 +39,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>`
+                    <tr>
                         <td class="table-link">Sorry, you have no reports generated yet.</td>
                     </tr>
                 </tbody>

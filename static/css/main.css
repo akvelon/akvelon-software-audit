@@ -129,3 +129,20 @@ body, button, input, select, textarea {
     padding: 8px 10px;
     vertical-align: top;
 }
+
+.notification {
+    background: #f5f7fa;
+    border-radius: 3px;
+    padding: 10px 20px;
+    position: relative;
+}
+
+.notification.is-error {
+    background: #fce473;
+    color: rgba(0,0,0,0.5);
+}
+
+.notification.is-success {
+    background: #7bf76c;
+    color: rgba(0,0,0,0.5);
+}
