@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"akvelon/akvelon-software-audit/internals"
+	"akvelon/akvelon-software-audit/internals/analizer"
 	"akvelon/akvelon-software-audit/internals/vcs"
 	"fmt"
 	"path/filepath"
@@ -33,9 +33,9 @@ func (this *MainController) Analyze() {
 		return
 	}
 
-	repo := vcs.Repository{URL: repoLink}
+	repo := vcs.NewRepository(repoLink)
 
-	_, err := doAnalyze(&repo)
+	_, err := doAnalyze(repo)
 	if err != nil {
 		flash.Error("Couldn't analyze the repository: " + err.Error())
 		flash.Store(&this.Controller)
@@ -48,12 +48,12 @@ func (this *MainController) Analyze() {
 	this.Ctx.Redirect(302, "/")
 }
 
-func doAnalyze(repo *vcs.Repository) (internals.RepoAnalyzeResult, error) {
+func doAnalyze(repo *vcs.Repository) (analizer.Result, error) {
 	// fetch repo for further analyzis
 	var reposDest = filepath.Join(".", "_repos")
 	_, err := repo.Download(reposDest)
 	if err != nil {
-		return internals.RepoAnalyzeResult{}, fmt.Errorf("Failed do download repository: %v", err)
+		return analizer.Result{}, fmt.Errorf("Failed do download repository: %v", err)
 	}
-	return internals.RepoAnalyzeResult{Grade: 10}, nil
+	return analizer.Result{}, nil
 }

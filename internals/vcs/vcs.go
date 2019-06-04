@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"akvelon/akvelon-software-audit/internals"
 	"errors"
 	"log"
 	"os"
@@ -11,11 +10,20 @@ import (
 	"golang.org/x/tools/go/vcs"
 )
 
-// Repository reporesents a repository will be audited
-type Repository internals.Repository
+// Repository reporesents a repository that will be audited
+type Repository struct {
+	URL string
+}
+
+// NewRepository creates new Repository for furtger analisys.
+func NewRepository(link string) (*Repository) {
+	return &Repository{
+		URL: link,
+	}
+}
 
 // Download takes a user-provided string that represents a destination to.
-func (r *Repository) Download(dest string) (fullLocalPath string, err error) {
+func (r *Repository) Download(dest string) (fullPath string, err error) {
 	return download(r.URL, dest, true)
 }
 

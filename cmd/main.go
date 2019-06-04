@@ -1,19 +1,20 @@
 package main
 
 import (
+	"akvelon/akvelon-software-audit/internals/analizer"
 	"akvelon/akvelon-software-audit/internals/vcs"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var (
-	repo = flag.String("repo", "", "URL of remote repository")
+	repo      = flag.String("repo", "", "URL of remote repository")
+	reposDest = filepath.Join("..", "_repos")
 )
-
-var reposDest = filepath.Join("..", "_repos")
 
 func main() {
 	flag.Parse()
@@ -22,13 +23,22 @@ func main() {
 		return
 	}
 
-	repository := vcs.Repository{URL: *repo}
-	fullLocalPath, err := repository.Download(reposDest)
+	repository := vcs.NewRepository(*repo)
+	fullPath, err := repository.Download(reposDest)
+	fmt.Printf("Downloaded at: %s\n", fullPath)
 
 	if err != nil {
 		log.Fatalf("Fatal error downloading %s: %s", *repo, err.Error())
 		os.Exit(1)
 	}
 
-	fmt.Printf("Downloaded at: %s\n", fullLocalPath)
+	// TODO: decide where to store results, e.g. MongoDB?
+	//storage := mongoDB.NewStorage()
+	analizer := analizer.NewService(fullPath)
+
+	fmt.Printf("Starting license analize at %s\n for %s\n", time.Now().Format(time.RFC850), fullPath)
+	_, err2 := analizer.Run()
+	if err2 != nil {
+		log.Fatalf("Fatal error analizing repo %s: %s", fullPath, err.Error())
+	}
 }
