@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"akvelon/akvelon-software-audit/internals/analizer"
+	"akvelon/akvelon-software-audit/internals/analyzer"
 	"akvelon/akvelon-software-audit/internals/vcs"
 	"fmt"
 	"path/filepath"
@@ -15,6 +15,36 @@ type MainController struct {
 
 func (this *MainController) Get() {
 	beego.ReadFromRequest(&this.Controller)
+
+	this.Layout = "layout_main.tpl"
+	this.LayoutSections = make(map[string]string)
+
+	this.LayoutSections["Header"] = "header.tpl"
+	this.LayoutSections["Footer"] = "footer.tpl"
+}
+
+func (this *MainController) Report() {
+	provider := this.Ctx.Input.Param(":provider")
+    if provider == "" {
+        this.Ctx.WriteString("provider is empty")
+        return
+	}
+	
+	orgname := this.Ctx.Input.Param(":orgname")
+    if orgname == "" {
+        this.Ctx.WriteString("orgname is empty")
+        return
+	}
+	
+	reponame := this.Ctx.Input.Param(":reponame")
+    if reponame == "" {
+        this.Ctx.WriteString("reponame is empty")
+        return
+    }
+
+	this.Data["provider"] = provider
+	this.Data["orgname"] = orgname
+	this.Data["reponame"] = reponame
 
 	this.Layout = "layout_main.tpl"
 	this.LayoutSections = make(map[string]string)
@@ -43,17 +73,17 @@ func (this *MainController) Analyze() {
 		return
 	}
 
-	flash.Success("Thanks, repository submitted for analyze.")
-	flash.Store(&this.Controller)
-	this.Ctx.Redirect(302, "/")
+	// flash.Success("Thanks, repository submitted for analyze.")
+	// flash.Store(&this.Controller)
+	this.Ctx.Redirect(302, fmt.Sprintf("/report/%v", repoLink))
 }
 
-func doAnalyze(repo *vcs.Repository) (analizer.Result, error) {
+func doAnalyze(repo *vcs.Repository) (analyzer.ScanResult, error) {
 	// fetch repo for further analyzis
 	var reposDest = filepath.Join(".", "_repos")
 	_, err := repo.Download(reposDest)
 	if err != nil {
-		return analizer.Result{}, fmt.Errorf("Failed do download repository: %v", err)
+		return analyzer.ScanResult{}, fmt.Errorf("Failed do download repository: %v", err)
 	}
-	return analizer.Result{}, nil
+	return analyzer.ScanResult{}, nil
 }

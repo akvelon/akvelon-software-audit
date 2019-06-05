@@ -1,7 +1,7 @@
 package main
 
 import (
-	"akvelon/akvelon-software-audit/internals/analizer"
+	"akvelon/akvelon-software-audit/internals/analyzer"
 	"akvelon/akvelon-software-audit/internals/vcs"
 	"flag"
 	"fmt"
@@ -32,13 +32,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: decide where to store results, e.g. MongoDB?
+	// TODO: decide where to store results, e.g. MongoDB? BoltDB?
 	//storage := mongoDB.NewStorage()
-	analizer := analizer.NewService(fullPath)
+	analyzer := analyzer.NewService(fullPath)
 
 	fmt.Printf("Starting license analize at %s\n for %s\n", time.Now().Format(time.RFC850), fullPath)
-	_, err2 := analizer.Run()
-	if err2 != nil {
-		log.Fatalf("Fatal error analizing repo %s: %s", fullPath, err.Error())
+	res, analyzerErr := analyzer.Run()
+
+	if analyzerErr != nil {
+		log.Fatalf("Fatal error analizing repo %s: %s", fullPath, analyzerErr.Error())
+	}
+
+	for _, item := range res {
+		fmt.Printf("FileName: %s\n", item.File)
+		fmt.Printf("License: %s\n", item.License)
+		fmt.Printf("Confidence: %s\n", item.Confidence)
+		fmt.Printf("Size: %s\n\n\n", item.Size)
 	}
 }
