@@ -113,6 +113,7 @@ body, button, input, select, textarea {
     color: #222324;
     margin-bottom: 20px;
     width: 100%;
+    table-layout: fixed;
 }
 
 .table td, .table th {
@@ -120,6 +121,7 @@ body, button, input, select, textarea {
     border-width: 0 0 1px;
     padding: 8px 10px;
     vertical-align: top;
+    word-break: break-word;
 }
 
 .table thead th {

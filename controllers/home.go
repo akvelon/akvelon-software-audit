@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"akvelon/akvelon-software-audit/internals/analyzer"
+	"akvelon/akvelon-software-audit/internals/storage/bolt"
 	"akvelon/akvelon-software-audit/internals/vcs"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -25,26 +27,28 @@ func (this *MainController) Get() {
 
 func (this *MainController) Report() {
 	provider := this.Ctx.Input.Param(":provider")
-    if provider == "" {
-        this.Ctx.WriteString("provider is empty")
-        return
+	if provider == "" {
+		this.Ctx.WriteString("provider is empty")
+		return
 	}
-	
-	orgname := this.Ctx.Input.Param(":orgname")
-    if orgname == "" {
-        this.Ctx.WriteString("orgname is empty")
-        return
-	}
-	
-	reponame := this.Ctx.Input.Param(":reponame")
-    if reponame == "" {
-        this.Ctx.WriteString("reponame is empty")
-        return
-    }
 
-	this.Data["provider"] = provider
-	this.Data["orgname"] = orgname
-	this.Data["reponame"] = reponame
+	orgname := this.Ctx.Input.Param(":orgname")
+	if orgname == "" {
+		this.Ctx.WriteString("orgname is empty")
+		return
+	}
+
+	reponame := this.Ctx.Input.Param(":reponame")
+	if reponame == "" {
+		this.Ctx.WriteString("reponame is empty")
+		return
+	}
+
+	repoURL := fmt.Sprintf("%s/%s/%s", provider, orgname, reponame)
+	this.Data["repoURL"] = repoURL
+	repoResult, _ := bolt.GetRepoFromDB(repoURL)
+
+	this.Data["analyzeResult"] = repoResult
 
 	this.Layout = "layout_main.tpl"
 	this.LayoutSections = make(map[string]string)
@@ -65,7 +69,7 @@ func (this *MainController) Analyze() {
 
 	repo := vcs.NewRepository(repoLink)
 
-	_, err := doAnalyze(repo)
+	err := doAnalyze(repo)
 	if err != nil {
 		flash.Error("Couldn't analyze the repository: " + err.Error())
 		flash.Store(&this.Controller)
@@ -73,17 +77,30 @@ func (this *MainController) Analyze() {
 		return
 	}
 
-	// flash.Success("Thanks, repository submitted for analyze.")
-	// flash.Store(&this.Controller)
 	this.Ctx.Redirect(302, fmt.Sprintf("/report/%v", repoLink))
 }
 
-func doAnalyze(repo *vcs.Repository) (analyzer.ScanResult, error) {
-	// fetch repo for further analyzis
+func doAnalyze(repo *vcs.Repository) error {
 	var reposDest = filepath.Join(".", "_repos")
 	_, err := repo.Download(reposDest)
 	if err != nil {
-		return analyzer.ScanResult{}, fmt.Errorf("Failed do download repository: %v", err)
+		return fmt.Errorf("Failed do download repository: %v", err)
 	}
-	return analyzer.ScanResult{}, nil
+	analyzer := analyzer.NewService(reposDest)
+	res, analyzerErr := analyzer.Run()
+
+	if analyzerErr != nil {
+		return fmt.Errorf("Fatal error analizing repo %s: %s", reposDest, analyzerErr.Error())
+	}
+
+	resBytes, err := json.Marshal(res)
+	if err != nil {
+		return fmt.Errorf("could not marshal json: %v", err)
+	}
+
+	errDb := bolt.SaveRepoToDB(repo.URL, resBytes)
+	if errDb != nil {
+		return fmt.Errorf("failed to save results to db: %v", errDb)
+	}
+	return nil
 }
