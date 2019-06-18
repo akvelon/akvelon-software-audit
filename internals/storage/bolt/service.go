@@ -11,8 +11,12 @@ import (
 )
 
 const (
-	DBPath     = "akvelonaudit.db"
+	// DBPath is the relative (or absolute) path to the bolt database file
+	DBPath = "akvelonaudit.db"
+	// RepoBucket is the bucket in which repos will be saved in the bolt DB
 	RepoBucket = "Repository"
+	// MetaBucket is the bucket containing meta info about db
+	MetaBucket string = "meta"
 )
 
 type RepoScanResult struct {
@@ -20,6 +24,10 @@ type RepoScanResult struct {
 	License    string `json:"License"`
 	Confidence string `json:"Confidence"`
 	Size       string `json:"Size"`
+}
+
+type recentItem struct {
+	Repo string
 }
 
 type NotFoundError struct {
@@ -43,9 +51,85 @@ func InitStorage() error {
 		if err != nil {
 			return err
 		}
+		_, err = tx.CreateBucketIfNotExists([]byte(MetaBucket))
 		return err
 	})
 	return err
+}
+
+// GetRecentlyViewed get list of recent items.
+func GetRecentlyViewed() ([]string, error) {
+	db, err := bolt.Open(DBPath, 0755, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return nil, fmt.Errorf("could not open bolt db: %v", err)
+	}
+	defer db.Close()
+
+	recent := &[]recentItem{}
+	err = db.View(func(tx *bolt.Tx) error {
+		rb := tx.Bucket([]byte(MetaBucket))
+		if rb == nil {
+			return fmt.Errorf("meta bucket not found")
+		}
+		b := rb.Get([]byte("recent"))
+		if b == nil {
+			b, err = json.Marshal([]recentItem{})
+			if err != nil {
+				return err
+			}
+		}
+		json.Unmarshal(b, recent)
+
+		return nil
+	})
+
+	var recentRepos = make([]string, len(*recent))
+	var j = len(*recent) - 1
+	for _, r := range *recent {
+		recentRepos[j] = r.Repo
+		j--
+	}
+	return recentRepos, nil
+}
+
+// UpdateRecentlyViewed updated list of recent items.
+func UpdateRecentlyViewed(repo string) error {
+	db, err := bolt.Open(DBPath, 0755, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return fmt.Errorf("could not open bolt db: %v", err)
+	}
+	defer db.Close()
+
+	db.Update(func(tx *bolt.Tx) error {
+		mb := tx.Bucket([]byte(MetaBucket))
+		if mb == nil {
+			return errors.New("meta bucket not found")
+		}
+		b := mb.Get([]byte("recent"))
+		if b == nil {
+			b, _ = json.Marshal([]recentItem{})
+		}
+		recent := []recentItem{}
+		json.Unmarshal(b, &recent)
+
+		for i := range recent {
+			if recent[i].Repo == repo {
+				return nil
+			}
+		}
+
+		recent = append(recent, recentItem{Repo: repo})
+		if len(recent) > 5 {
+			// trim recent if it's grown to over 5
+			recent = (recent)[1:6]
+		}
+		b, err := json.Marshal(&recent)
+		if err != nil {
+			return err
+		}
+		return mb.Put([]byte("recent"), b)
+	})
+	return nil
 }
 
 // GetRepoFromDB returns repo data if exists.

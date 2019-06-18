@@ -39,9 +39,11 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td class="table-link">Sorry, you have no reports generated yet.</td>
-                </tr>
+                {{ range $key, $val := .Recent }}
+                        <tr>
+                            <td class="table-link"><a href="/report/{{ $val }}">{{ $val }}</td>
+                        </tr>
+                {{ end }}
             </tbody>
         </table>
     </div>

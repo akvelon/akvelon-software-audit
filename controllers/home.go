@@ -18,6 +18,13 @@ type MainController struct {
 func (this *MainController) Get() {
 	beego.ReadFromRequest(&this.Controller)
 
+	recent, errDb := bolt.GetRecentlyViewed()
+	if errDb != nil {
+		fmt.Printf("failed to get results from db: %v", errDb)
+	}
+
+	this.Data["Recent"] = recent
+
 	this.Layout = "layout_main.tpl"
 	this.LayoutSections = make(map[string]string)
 
@@ -27,20 +34,11 @@ func (this *MainController) Get() {
 
 func (this *MainController) Report() {
 	provider := this.Ctx.Input.Param(":provider")
-	if provider == "" {
-		this.Ctx.WriteString("provider is empty")
-		return
-	}
-
 	orgname := this.Ctx.Input.Param(":orgname")
-	if orgname == "" {
-		this.Ctx.WriteString("orgname is empty")
-		return
-	}
-
 	reponame := this.Ctx.Input.Param(":reponame")
-	if reponame == "" {
-		this.Ctx.WriteString("reponame is empty")
+
+	if provider == "" || orgname == "" || reponame == "" {
+		this.Ctx.WriteString("Sorry, invalid query string parameter.")
 		return
 	}
 
@@ -101,6 +99,11 @@ func doAnalyze(repo *vcs.Repository) error {
 	errDb := bolt.SaveRepoToDB(repo.URL, resBytes)
 	if errDb != nil {
 		return fmt.Errorf("failed to save results to db: %v", errDb)
+	}
+
+	errDb = bolt.UpdateRecentlyViewed(repo.URL)
+	if errDb != nil {
+		return fmt.Errorf("failed to update recently viewed to db: %v", errDb)
 	}
 	return nil
 }

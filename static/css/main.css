@@ -132,6 +132,14 @@ body, button, input, select, textarea {
     vertical-align: top;
 }
 
+.table-link a {
+    color: #4581d4;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-transition: none 86ms ease-out;
+    transition: none 86ms ease-out;
+}
+
 .notification {
     background: #f5f7fa;
     border-radius: 3px;
