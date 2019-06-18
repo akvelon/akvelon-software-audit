@@ -8,7 +8,7 @@ start:
 	bee run
 
 clean:
-	rm myapp && rm akvelon-software-audit && rm ./cmd/cmd
+	rm -f myapp && rm -f akvelon-software-audit && rm -f ./cmd/cmd && rm -rf _repos && rm -f akvelonaudit.db
 
 cleanGHRepos:
 	cd _repos && rm -rf github.com/ 

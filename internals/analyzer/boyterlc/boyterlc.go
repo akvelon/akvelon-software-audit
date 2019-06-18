@@ -1,18 +1,18 @@
 package boyterlc
 
 import (
+	"akvelon/akvelon-software-audit/internals/cmd"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os/exec"
 	"strings"
 )
 
 const outFormat = "json"
 
 type LicenseMatch struct {
-	LicenseId string
-	Score     float64
+	LicenseId  string  `json:"LicenseId"`
+	Percentage float64 `json:"Percentage"`
 }
 
 type FileResult struct {
@@ -30,27 +30,22 @@ type FileResult struct {
 
 // LCScanResult shows meaningful results of license scan.
 type LCScanResult struct {
-	File string
-	License string
+	File       string
+	License    string
 	Confidence string
-	Size string
+	Size       string
 }
 
 // Scan license with https://github.com/boyter/lc tool.
 func Scan(path string) ([]LCScanResult, error) {
 	fmt.Printf("Start lc at path: %s\n", path)
-	cmd := exec.Command("lc", "-f", outFormat, path)
-	out, err := cmd.CombinedOutput()
 
-	if err != nil {
-		log.Printf("cmd.Run() failed with %s\n", err)
-		return nil, err
-	}
+	stdout, _ := cmd.Exec("lc", []string{"-f", outFormat, path})
 
 	var res []FileResult
-	jsonErr := json.Unmarshal(out, &res)
+	jsonErr := json.Unmarshal(stdout, &res)
 	if jsonErr != nil {
-		log.Printf("Failed to parse output json %s\n", jsonErr)
+		log.Printf("Failed to parse output json: %s\n", jsonErr)
 		return nil, jsonErr
 	}
 
@@ -58,11 +53,11 @@ func Scan(path string) ([]LCScanResult, error) {
 	for _, item := range res {
 
 		licenseConcluded, confidence := determineLicense(item)
-		output = append(output, LCScanResult {
-			File: item.Filename,
-			License: licenseConcluded,
+		output = append(output, LCScanResult{
+			File:       item.Filename,
+			License:    licenseConcluded,
 			Confidence: confidence,
-			Size: item.BytesHuman,
+			Size:       item.BytesHuman,
 		})
 	}
 	fmt.Printf("Finish running the command at path: %s\n", path)
@@ -79,7 +74,7 @@ func determineLicense(result FileResult) (string, string) {
 		confidence = 100.00
 	} else if len(result.LicenseGuesses) != 0 {
 		license = result.LicenseGuesses[0].LicenseId
-		confidence = result.LicenseGuesses[0].Score
+		confidence = result.LicenseGuesses[0].Percentage
 		licenseMatches = append(licenseMatches, result.LicenseGuesses[0])
 	}
 

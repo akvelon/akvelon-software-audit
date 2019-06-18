@@ -17,6 +17,7 @@ Added now for testing purposes.
 Example usage: ``` cd cmd &&  ./cmd  -repo https://github.com/akvelon/PowerBI-Stacked-Column-Chart```
 
 ### Docker
+0) Clean root folder from build artifacts: ```make clean```
 1) Build image locally: ```docker build -t akvelon-software-audit .```
-2) Run Docker container: ```docker run -p 777:777 akvelon-software-audit ```
+2) Run Docker container: ```docker run -p 777:777 akvelon-software-audit```
 3) Expose service at ```http://localhost:777```
