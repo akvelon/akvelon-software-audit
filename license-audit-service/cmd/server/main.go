@@ -12,6 +12,10 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+const (
+	downloadRepoPath = "_repos/src/github.com"
+)
+
 var (
 	addr   = flag.String("http", ":8000", "HTTP listen address")
 	router *httprouter.Router
@@ -19,7 +23,7 @@ var (
 
 func main() {
 	flag.Parse()
-	if err := os.MkdirAll("_repos/src/github.com", 0755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(downloadRepoPath, 0755); err != nil && !os.IsExist(err) {
 		log.Fatal("ERROR: could not create repos dir: ", err)
 	}
 

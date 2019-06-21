@@ -3,19 +3,22 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"log"
 	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/httplib"
+	"github.com/streadway/amqp"
 )
 
 var (
-	auditSrv             = beego.AppConfig.String("auditservice")
-	getHealthURL         = fmt.Sprintf("%s/health", auditSrv)
+	auditSrv  = beego.AppConfig.String("auditservice")
+	rabbitSrv = beego.AppConfig.String("rabbit")
+
 	getRecentlyViewedURL = fmt.Sprintf("%s/recent", auditSrv)
 	getAnalizeByRepoURL  = fmt.Sprintf("%s/analize", auditSrv)
-	postAnalizeByRepoURL = fmt.Sprintf("%s/analize", auditSrv)
+
+	uXAuditQueueName = "audit-queue"
 )
 
 type MainController struct {
@@ -98,22 +101,44 @@ func (this *MainController) Analyze() {
 		return
 	}
 
-	body := strings.NewReader(fmt.Sprintf(`url=%s`, repoLink))
-	req, err := http.NewRequest("POST", postAnalizeByRepoURL, body)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	conn, err := amqp.Dial(rabbitSrv)
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
 
-	if err != nil {
-		flash.Error("Failed to analyze the repository.")
-		flash.Store(&this.Controller)
-		this.Redirect("/", 302)
-		return
-	}
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a rmq channel")
+	defer ch.Close()
 
-	defer resp.Body.Close()
+	q, err := ch.QueueDeclare(
+		uXAuditQueueName, // name
+		false,            // durable
+		false,            // delete when unused
+		false,            // exclusive
+		false,            // no-wait
+		nil,              // arguments
+	)
+	failOnError(err, "Failed to declare a rabbit queue")
 
-	flash.Success("Thanks, results will be ready soon...")
+	body := repoLink
+	err = ch.Publish(
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "text/plain",
+			Body:         []byte(body),
+		})
+	failOnError(err, "Failed to publish a message")
+
+	flash.Success("Thanks, results are submitted and will be ready soon...")
 	flash.Store(&this.Controller)
 	this.Redirect("/", 302)
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
 }

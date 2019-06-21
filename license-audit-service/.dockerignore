@@ -3,4 +3,5 @@
 
 README.md
 _repos
-audit-serv
+audit-srv
+audit-worker

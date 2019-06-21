@@ -76,15 +76,15 @@ func analize(a licanalize.Service) func(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 
-		var repo licanalize.AnalizedRepo
-		repo.URL = repoLink
-		err := a.Scan(repo)
+		err := a.Scan(licanalize.AnalizedRepo{
+			URL: repoLink,
+		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(fmt.Sprintf("Finished analizing repo %s", repo.URL))
+		json.NewEncoder(w).Encode(fmt.Sprintf("Finished analizing repo %s", repoLink))
 	}
 }

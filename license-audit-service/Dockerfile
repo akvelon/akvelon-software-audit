@@ -20,6 +20,7 @@ COPY . .
 EXPOSE 8000
 
 # Compile the project
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./cmd/server/main.go 
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o audit-srv ./cmd/server/main.go && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o audit-worker ./cmd/worker/main.go
+RUN chmod +x scripts/run.sh
 
-ENTRYPOINT [ "/app/main" ]
+ENTRYPOINT [ "./scripts/run.sh" ]

@@ -17,3 +17,5 @@ Run
 docker-compose down
 ```
 to stop services.
+
+Navigate to http://localhost:15672/#/queues to inspect queue's state. 
