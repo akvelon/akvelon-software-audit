@@ -12,7 +12,7 @@
 ```
 3) Run Docker container: 
 ```
-    docker run -p 777:777 -v $(pwd)/views:/app/views -d akv-audit-ux
+    docker run -p 777:777 -v $(pwd)/views:/app/views -v $(pwd)/conf:/app/conf -d akv-audit-ux
 ```
 4) Expose service at 
 ```

@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  portal:
+    build:
+      context: ./ux
+    image: akv-audit-ux
+    ports:
+      - 777:777
+  audit-srv:
+    build:
+      context: ./license-audit-service
+    image: akv-audit-srv
+    ports:
+      - 8000:8000

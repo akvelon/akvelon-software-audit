@@ -17,6 +17,8 @@ RUN go mod download
 # Import the code from the context
 COPY . .
 
+EXPOSE 8000
+
 # Compile the project
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./cmd/server/main.go 
 
