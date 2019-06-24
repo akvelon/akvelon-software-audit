@@ -18,4 +18,8 @@ docker-compose down
 ```
 to stop services.
 
-Navigate to http://localhost:15672/#/queues to inspect queue's state. 
+### Monitoring Data
+
+* Navigate to http://localhost:15672/#/queues to inspect RabbitMQ queue's state. 
+
+* Navigate to http://localhost:9090/graph to inspect Prometheus graph data (e.g. current number of Go Threads, audit_ux_http_requests_total count etc)

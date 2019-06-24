@@ -4,6 +4,8 @@ import (
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/http/rest"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/licanalize"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/bolt"
+	"akvelon/akvelon-software-audit/license-audit-service/pkg/monitor"
+
 	"flag"
 	"log"
 	"net/http"
@@ -29,9 +31,10 @@ func main() {
 
 	s := new(bolt.Storage)
 	s.InitStorage()
-	licAnalizer := licanalize.NewService(s)
+	la := licanalize.NewService(s)
+	m := &monitor.Monitor{}
 
-	router := rest.Handler(licAnalizer)
+	router := rest.Handler(la, m)
 
 	log.Printf("The license-audit-service is running on: http://localhost:%s", *addr)
 	log.Fatal(http.ListenAndServe(*addr, router))

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"akvelon/akvelon-software-audit/ux/monitor"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/httplib"
@@ -33,6 +34,8 @@ type RepoScanResult struct {
 }
 
 func (this *MainController) Get() {
+	monitor.HttpRequestsTotal.Inc()
+
 	beego.ReadFromRequest(&this.Controller)
 	req := httplib.Get(getRecentlyViewedURL)
 	var recent []string
@@ -48,7 +51,7 @@ func (this *MainController) Get() {
 	}
 
 	this.Data["Recent"] = recent
-
+	
 	this.Layout = "layout_main.tpl"
 	this.LayoutSections = make(map[string]string)
 
@@ -57,6 +60,8 @@ func (this *MainController) Get() {
 }
 
 func (this *MainController) Report() {
+	monitor.HttpRequestsTotal.Inc()
+
 	provider := this.Ctx.Input.Param(":provider")
 	orgname := this.Ctx.Input.Param(":orgname")
 	reponame := this.Ctx.Input.Param(":reponame")
@@ -92,6 +97,8 @@ func (this *MainController) Report() {
 }
 
 func (this *MainController) Analyze() {
+	monitor.HttpRequestsTotal.Inc()
+	
 	repoLink := this.GetString("repo")
 	flash := beego.NewFlash()
 	if repoLink == "" {
