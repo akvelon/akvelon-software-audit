@@ -4,19 +4,13 @@ Scalable compliance and security audit for modern development.
 * license-audit-service - REST service for audit management of github repositories
 * ux - UI for interacting with Akvelon Audit Service
 
+We use [Prometheus](https://prometheus.io/) as a monitoring solution and [RabbitMQ](https://www.rabbitmq.com/) as a message broker for communication among services.
+
 ### Running With Docker
 
-Run 
-```
-docker-compose up 
-```
-to start services. Browse to http://localhost:777 to access portal.
+Run `docker-compose up` to start services. Browse to http://localhost:777 to access portal.
 
-Run
-```
-docker-compose down
-```
-to stop services.
+Run `docker-compose down` to stop services.
 
 ### Monitoring Data
 
