@@ -11,6 +11,6 @@ import (
 func main() {
 	beego.Handler("/metrics", promhttp.Handler())
 	monitor.RegisterMonitor()
-
+ 
 	beego.Run()
 }

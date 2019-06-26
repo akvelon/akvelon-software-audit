@@ -5,7 +5,7 @@ ENV GO111MODULE=on
 
 WORKDIR /app
 
-RUN apk update && apk upgrade && apk add --no-cache git
+RUN apk update && apk upgrade && apk add --no-cache git && apk add curl
 
 # We want to populate the module cache based on the go.{mod,sum} files
 COPY go.mod .

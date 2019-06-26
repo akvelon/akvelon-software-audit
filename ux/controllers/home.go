@@ -7,6 +7,8 @@ import (
 	"strings"
 	"akvelon/akvelon-software-audit/ux/monitor"
 
+	opentracing "github.com/opentracing/opentracing-go"
+
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/httplib"
 	"github.com/streadway/amqp"
@@ -24,6 +26,7 @@ var (
 
 type MainController struct {
 	beego.Controller
+	Tracer opentracing.Tracer
 }
 
 type RepoScanResult struct {
@@ -35,6 +38,7 @@ type RepoScanResult struct {
 
 func (this *MainController) Get() {
 	monitor.HttpRequestsTotal.Inc()
+	span := this.Tracer.StartSpan("Get-MainController")
 
 	beego.ReadFromRequest(&this.Controller)
 	req := httplib.Get(getRecentlyViewedURL)
@@ -57,10 +61,12 @@ func (this *MainController) Get() {
 
 	this.LayoutSections["Header"] = "header.tpl"
 	this.LayoutSections["Footer"] = "footer.tpl"
+	span.Finish()
 }
 
 func (this *MainController) Report() {
 	monitor.HttpRequestsTotal.Inc()
+	span := this.Tracer.StartSpan("Report-MainController")
 
 	provider := this.Ctx.Input.Param(":provider")
 	orgname := this.Ctx.Input.Param(":orgname")
@@ -68,6 +74,7 @@ func (this *MainController) Report() {
 
 	if provider == "" || orgname == "" || reponame == "" {
 		this.Ctx.WriteString("Sorry, invalid query string parameter.")
+		span.Finish()
 		return
 	}
 
@@ -94,6 +101,7 @@ func (this *MainController) Report() {
 
 	this.LayoutSections["Header"] = "header.tpl"
 	this.LayoutSections["Footer"] = "footer.tpl"
+	span.Finish()
 }
 
 func (this *MainController) Analyze() {
