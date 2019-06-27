@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"os"
 	"akvelon/akvelon-software-audit/ux/controllers"
 	"github.com/astaxie/beego"
 
@@ -9,14 +8,7 @@ import (
 )
 
 func init() {
-	var jaeggerSrvName string
-	if os.Getenv("JAEGER_SERVICE_NAME") == "" {
-		jaeggerSrvName = "akv-ux-jaegger"
-	} else {
-		jaeggerSrvName = os.Getenv("JAEGER_SERVICE_NAME")
-	}
-
-	t, _ := tracing.InitTracer(jaeggerSrvName)
+	t, _ := tracing.InitTracer(beego.AppConfig.String("jaeger-srv-name"))
 
 	beego.Router("/", &controllers.MainController{Tracer: t})
 	beego.Router("/analyze", &controllers.MainController{Tracer: t}, "post:Analyze")

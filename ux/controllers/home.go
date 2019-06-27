@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"net/http"
 	"akvelon/akvelon-software-audit/ux/monitor"
+	"akvelon/akvelon-software-audit/ux/lib/http"
 
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/httplib"
 	"github.com/streadway/amqp"
 )
 
@@ -39,21 +41,37 @@ type RepoScanResult struct {
 func (this *MainController) Get() {
 	monitor.HttpRequestsTotal.Inc()
 	span := this.Tracer.StartSpan("Get-MainController")
+	defer span.Finish()
 
 	beego.ReadFromRequest(&this.Controller)
-	req := httplib.Get(getRecentlyViewedURL)
-	var recent []string
-	rec, err := req.String()
+
+	req, err := http.NewRequest("GET", getRecentlyViewedURL, nil)
+
+	ext.SpanKindRPCClient.Set(span)
+	ext.HTTPUrl.Set(span, getRecentlyViewedURL)
+	ext.HTTPMethod.Set(span, "GET")
+	span.Tracer().Inject(
+		span.Context(),
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(req.Header),
+	)
+	resp, err := xhttp.Do(req)
+
 	if err != nil {
+		span.LogKV("getting-recent-scans", "failed to get recent results from audit service")
 		fmt.Printf("failed to get results from audit service: %v", err)
 	}
+
+	var recent []string
+	rec := string(resp)
 
 	dec := json.NewDecoder(strings.NewReader(rec))
 	err = dec.Decode(&recent)
 	if err != nil {
+		span.LogKV("getting-recent-scans", "failed to parse results from audit service")
 		fmt.Printf("failed to parse results from audit service: %v", err)
 	}
-
+	
 	this.Data["Recent"] = recent
 	
 	this.Layout = "layout_main.tpl"
@@ -61,12 +79,12 @@ func (this *MainController) Get() {
 
 	this.LayoutSections["Header"] = "header.tpl"
 	this.LayoutSections["Footer"] = "footer.tpl"
-	span.Finish()
 }
 
 func (this *MainController) Report() {
 	monitor.HttpRequestsTotal.Inc()
 	span := this.Tracer.StartSpan("Report-MainController")
+	defer span.Finish()
 
 	provider := this.Ctx.Input.Param(":provider")
 	orgname := this.Ctx.Input.Param(":orgname")
@@ -74,23 +92,40 @@ func (this *MainController) Report() {
 
 	if provider == "" || orgname == "" || reponame == "" {
 		this.Ctx.WriteString("Sorry, invalid query string parameter.")
-		span.Finish()
+		span.LogKV("getting-report-results", "invalid query string parameter")
 		return
 	}
 
 	repoURL := fmt.Sprintf("%s/%s/%s", provider, orgname, reponame)
+	span.SetTag("analized-repo", repoURL)
 	this.Data["repoURL"] = repoURL
 
-	req := httplib.Get(fmt.Sprintf("%s?url=%s", getAnalizeByRepoURL, repoURL))
-	var result []RepoScanResult
-	r, err := req.String()
+	url := fmt.Sprintf("%s?url=%s", getAnalizeByRepoURL, repoURL)
+	req, err := http.NewRequest("GET", url, nil)
+
+	ext.SpanKindRPCClient.Set(span)
+	ext.HTTPUrl.Set(span, url)
+	ext.HTTPMethod.Set(span, "GET")
+	span.Tracer().Inject(
+		span.Context(),
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(req.Header),
+	)
+	resp, err := xhttp.Do(req)
+
 	if err != nil {
+		span.LogKV("getting-report-results", "failed to get results from audit service")
 		fmt.Printf("failed to get results from audit service: %v", err)
 	}
+
+	r := string(resp)
+
+	var result []RepoScanResult
 
 	dec := json.NewDecoder(strings.NewReader(r))
 	err = dec.Decode(&result)
 	if err != nil {
+		span.LogKV("getting-report-results", "failed to parse results from audit service")
 		fmt.Printf("failed to parse results from audit service: %v", err)
 	}
 
@@ -101,20 +136,24 @@ func (this *MainController) Report() {
 
 	this.LayoutSections["Header"] = "header.tpl"
 	this.LayoutSections["Footer"] = "footer.tpl"
-	span.Finish()
 }
 
 func (this *MainController) Analyze() {
 	monitor.HttpRequestsTotal.Inc()
-	
+	span := this.Tracer.StartSpan("Analyze-MainController")
+	defer span.Finish()
+
 	repoLink := this.GetString("repo")
 	flash := beego.NewFlash()
 	if repoLink == "" {
 		flash.Error("Couldn't analyze the repository, empty string provided.")
 		flash.Store(&this.Controller)
+		span.LogKV("analize-repo", "couldn't analyze the repository, empty string provided")
 		this.Redirect("/", 302)
 		return
 	}
+
+	span.SetTag("analized-repo", repoLink)
 
 	conn, err := amqp.Dial(rabbitSrv)
 	failOnError(err, "Failed to connect to RabbitMQ")

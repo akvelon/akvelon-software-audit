@@ -8,28 +8,31 @@ import (
 	"log"
 	"net/http"
 
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/julienschmidt/httprouter"
 )
 
 // Handler handles request using service injected.
-func Handler(a licanalize.Service, m *monitor.Monitor) http.Handler {
+func Handler(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) http.Handler {
 	log.Println("Register monitor...")
 	m.RegisterMonitor()
 	router := httprouter.New()
 
 	router.Handler("GET", "/metrics", promhttp.Handler())
-	router.GET("/health", checkHealth(a, m))
-	router.GET("/recent", getRecentResults(a, m))
-	router.GET("/analize", getAnalizedResult(a, m))
+	router.GET("/health", checkHealth(a, m, t))
+	router.GET("/recent", getRecentResults(a, m, t))
+	router.GET("/analize", getAnalizedResult(a, m, t))
 
-	router.POST("/analize", analize(a, m))
+	router.POST("/analize", analize(a, m, t))
 
 
 	return router
 }
 
-func checkHealth(a licanalize.Service, m *monitor.Monitor) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func checkHealth(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		m.GetHttpRequestsTotal().Inc()
 
@@ -44,13 +47,18 @@ func checkHealth(a licanalize.Service, m *monitor.Monitor) func(w http.ResponseW
 	}
 }
 
-func getRecentResults(a licanalize.Service, m *monitor.Monitor) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func getRecentResults(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		m.GetHttpRequestsTotal().Inc()
 
+		spanCtx, _ := t.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+		span := t.StartSpan("get-recent-results", ext.RPCServerOption(spanCtx))
+		defer span.Finish()
+		
 		log.Println("Start exec getRecentResults...")
 		recent, err := a.GetRecent()
 		if err != nil {
+			span.LogKV("getting-recent-results", "failed to get recent results from audit db")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -60,9 +68,13 @@ func getRecentResults(a licanalize.Service, m *monitor.Monitor) func(w http.Resp
 	}
 }
 
-func getAnalizedResult(a licanalize.Service, m *monitor.Monitor) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getAnalizedResult(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		m.GetHttpRequestsTotal().Inc()
+
+		spanCtx, _ := t.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+		span := t.StartSpan("get-analized-repo-result", ext.RPCServerOption(spanCtx))
+		defer span.Finish()
 
 		log.Println("Start exec getAnalizedResult...")
 		queryValues := r.URL.Query()
@@ -70,6 +82,7 @@ func getAnalizedResult(a licanalize.Service, m *monitor.Monitor) func(w http.Res
 		log.Printf("url: %s", url)
 		result, err := a.GetRepoResultFromDB(url)
 		if err != nil {
+			span.LogKV("getting-analized-repo-result", "failed to get result from audit db")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -79,7 +92,7 @@ func getAnalizedResult(a licanalize.Service, m *monitor.Monitor) func(w http.Res
 	}
 }
 
-func analize(a licanalize.Service, m *monitor.Monitor) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func analize(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		m.GetHttpRequestsTotal().Inc()
 

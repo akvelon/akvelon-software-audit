@@ -3,9 +3,9 @@ package tracing
 import (
 	"fmt"
 	"io"
+	"os"
 	"time"
 
-	"github.com/astaxie/beego"
 	opentracing "github.com/opentracing/opentracing-go"
 	jaeger "github.com/uber/jaeger-client-go"
 	jaegerClientConfig "github.com/uber/jaeger-client-go/config"
@@ -23,7 +23,7 @@ func InitTracer(service string) (opentracing.Tracer, io.Closer) {
 		},
 	}
 
-	hostPort := fmt.Sprintf("%s:%s", beego.AppConfig.String("jaeger-agent-host"), beego.AppConfig.String("jaeger-agent-port"))
+	hostPort := fmt.Sprintf("%s:%s", os.Getenv("JAEGER_AGENT_HOST"), os.Getenv("JAEGER_AGENT_PORT"))
 	sender, err := jaeger.NewUDPTransport(hostPort, 0)
 
 	if err != nil {
