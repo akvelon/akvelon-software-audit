@@ -13,7 +13,13 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/julienschmidt/httprouter"
+	"github.com/streadway/amqp"
 )
+
+var (
+	rabbitSrv = "amqp://guest:guest@rabbitmq:5672"
+	uXAuditQueueName = "audit-queue"
+) 
 
 // Handler handles request using service injected.
 func Handler(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) http.Handler {
@@ -95,23 +101,56 @@ func getAnalizedResult(a licanalize.Service, m *monitor.Monitor, t opentracing.T
 func analize(a licanalize.Service, m *monitor.Monitor, t opentracing.Tracer) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		m.GetHttpRequestsTotal().Inc()
-
 		log.Println("Start exec analize...")
+
+		spanCtx, _ := t.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+		span := t.StartSpan("post-analize-repo", ext.RPCServerOption(spanCtx))
+		defer span.Finish()
+
 		repoLink := r.FormValue("url")
 		if repoLink == "" {
-			http.Error(w, "Failed to parse input parameter, url is missing", http.StatusBadRequest)
+			http.Error(w, "post-analize-repo: Failed to parse input parameter, url is missing", http.StatusBadRequest)
 			return
 		}
 
-		err := a.Scan(licanalize.AnalizedRepo{
-			URL: repoLink,
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		conn, err := amqp.Dial(rabbitSrv)
+		failOnError(err, "Failed to connect to RabbitMQ")
+		defer conn.Close()
+
+		ch, err := conn.Channel()
+		failOnError(err, "Failed to open a rmq channel")
+		defer ch.Close()
+
+		q, err := ch.QueueDeclare(
+			uXAuditQueueName, // name
+			false,            // durable
+			false,            // delete when unused
+			false,            // exclusive
+			false,            // no-wait
+			nil,              // arguments
+		)
+		failOnError(err, "Failed to declare a rabbit queue")
+
+		body := repoLink
+		err = ch.Publish(
+			"",     // exchange
+			q.Name, // routing key
+			false,  // mandatory
+			false,  // immediate
+			amqp.Publishing{
+				DeliveryMode: amqp.Persistent,
+				ContentType:  "text/plain",
+				Body:         []byte(body),
+			})
+		failOnError(err, "Failed to publish a message")
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(fmt.Sprintf("Finished analizing repo %s", repoLink))
+		json.NewEncoder(w).Encode(fmt.Sprintf("In progress analizing repo %s", repoLink))
+	}
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
 	}
 }

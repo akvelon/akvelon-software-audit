@@ -3,8 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"net/url"
 	"strings"
+	"strconv"
 	"net/http"
 	"akvelon/akvelon-software-audit/ux/monitor"
 	"akvelon/akvelon-software-audit/ux/lib/http"
@@ -13,17 +14,13 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 
 	"github.com/astaxie/beego"
-	"github.com/streadway/amqp"
 )
 
 var (
 	auditSrv  = beego.AppConfig.String("auditservice")
-	rabbitSrv = beego.AppConfig.String("rabbit")
 
-	getRecentlyViewedURL = fmt.Sprintf("%s/recent", auditSrv)
-	getAnalizeByRepoURL  = fmt.Sprintf("%s/analize", auditSrv)
-
-	uXAuditQueueName = "audit-queue"
+	recentlyViewedURL = fmt.Sprintf("%s/recent", auditSrv)
+	analizeByRepoURL  = fmt.Sprintf("%s/analize", auditSrv)
 )
 
 type MainController struct {
@@ -45,10 +42,10 @@ func (this *MainController) Get() {
 
 	beego.ReadFromRequest(&this.Controller)
 
-	req, err := http.NewRequest("GET", getRecentlyViewedURL, nil)
+	req, err := http.NewRequest("GET", recentlyViewedURL, nil)
 
 	ext.SpanKindRPCClient.Set(span)
-	ext.HTTPUrl.Set(span, getRecentlyViewedURL)
+	ext.HTTPUrl.Set(span, recentlyViewedURL)
 	ext.HTTPMethod.Set(span, "GET")
 	span.Tracer().Inject(
 		span.Context(),
@@ -100,7 +97,7 @@ func (this *MainController) Report() {
 	span.SetTag("analized-repo", repoURL)
 	this.Data["repoURL"] = repoURL
 
-	url := fmt.Sprintf("%s?url=%s", getAnalizeByRepoURL, repoURL)
+	url := fmt.Sprintf("%s?url=%s", analizeByRepoURL, repoURL)
 	req, err := http.NewRequest("GET", url, nil)
 
 	ext.SpanKindRPCClient.Set(span)
@@ -155,44 +152,29 @@ func (this *MainController) Analyze() {
 
 	span.SetTag("analized-repo", repoLink)
 
-	conn, err := amqp.Dial(rabbitSrv)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	data := url.Values{}
+	data.Set("url", repoLink)
 
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a rmq channel")
-	defer ch.Close()
+	req, err := http.NewRequest("POST", analizeByRepoURL, strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
-	q, err := ch.QueueDeclare(
-		uXAuditQueueName, // name
-		false,            // durable
-		false,            // delete when unused
-		false,            // exclusive
-		false,            // no-wait
-		nil,              // arguments
+	ext.SpanKindRPCClient.Set(span)
+	ext.HTTPUrl.Set(span, analizeByRepoURL)
+	ext.HTTPMethod.Set(span, "POST")
+	span.Tracer().Inject(
+		span.Context(),
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(req.Header),
 	)
-	failOnError(err, "Failed to declare a rabbit queue")
+	_, err = xhttp.Do(req)
 
-	body := repoLink
-	err = ch.Publish(
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
-		amqp.Publishing{
-			DeliveryMode: amqp.Persistent,
-			ContentType:  "text/plain",
-			Body:         []byte(body),
-		})
-	failOnError(err, "Failed to publish a message")
+	if err != nil {
+		span.LogKV("analized-repo", "failed to execute analize repo from audit service")
+		fmt.Printf("failed to execute analize repo from audit service: %v", err)
+	}
 
 	flash.Success("Thanks, results are submitted and will be ready soon...")
 	flash.Store(&this.Controller)
 	this.Redirect("/", 302)
-}
-
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
 }
