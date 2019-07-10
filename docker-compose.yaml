@@ -14,7 +14,6 @@ services:
     ports:
       - 777:777
     depends_on:
-      - rabbitmq
       - jaeger
     restart: on-failure
 
@@ -29,6 +28,16 @@ services:
       - JAEGER_AGENT_PORT=6831
     ports:
       - 8000:8000
+    depends_on:
+      - rabbitmq
+      - audit-mongo
+    restart: on-failure
+
+  audit-worker:
+    build:
+      context: ./license-audit-worker
+    image: akv-audit-worker
+    container_name: akv-audit-worker
     depends_on:
       - rabbitmq
       - audit-mongo

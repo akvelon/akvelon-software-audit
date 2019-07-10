@@ -13,7 +13,8 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-audit-srv
+_repos
+audit-worker
 
 !go.mod
 !go.sum

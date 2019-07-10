@@ -1,6 +1,5 @@
 #!/bin/sh
 clear 
-echo "Running service and worker..."
+echo "Running service..."
 
-./audit-worker & ./audit-srv  
-
+./audit-srv  

@@ -2,4 +2,5 @@
 .vscode
 
 README.md
-audit-srv
+_repos
+audit-worker

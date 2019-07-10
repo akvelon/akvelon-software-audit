@@ -4,6 +4,7 @@ import (
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/licanalize"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/mongo"
 	"log"
+	"os"
 
 	"github.com/streadway/amqp"
 )
@@ -11,9 +12,15 @@ import (
 const (
 	uXAuditQueueName = "audit-queue"
 	rabbitSrv        = "amqp://guest:guest@rabbitmq:5672"
+
+	downloadRepoPath = "_repos/src/github.com"
 )
 
 func main() {
+	if err := os.MkdirAll(downloadRepoPath, 0755); err != nil && !os.IsExist(err) {
+		log.Fatal("ERROR: could not create repos dir: ", err)
+	}
+
 	s := new(mongo.Storage)
 	err := s.InitStorage()
 	if err != nil {

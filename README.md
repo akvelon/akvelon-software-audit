@@ -2,6 +2,7 @@
 Scalable compliance and security audit for modern development.
 
 * license-audit-service - REST service for audit management of github repositories
+* license-audit-worker - console app for executing long running audit tasks
 * ux - UI for interacting with Akvelon Audit Service (powered by [Beego](https://beego.me/) framework)
 * [MongoDB](https://www.mongodb.com/) for persistant storage
 
@@ -22,7 +23,3 @@ Run `docker-compose down` to stop services.
 * Navigate to http://localhost:9090/graph to inspect Prometheus graph data (e.g. current number of __Go Threads__, __audit_ux_http_requests_total__ count etc).
 
 * Navigate to http://localhost:16686/search to inspect Jaeger traces.
-
-### Known issues
-
-When running via docker-compose, audit-service may fail to connect to RabbitMQ due to it is not already started. Please restart audit service docker container by `docker restart akv-audit` and try again.

@@ -122,13 +122,33 @@ func (b *Storage) UpdateRecentlyViewed(repo string) error {
 
 // GetRepoFromDB returns repo data if exists.
 func (b *Storage) GetRepoFromDB(repo string) ([]RepoScanResult, error) {
-	log.Printf("\n Getting %q data from db... \n\n", repo)
+	log.Printf("Getting %q data from db... \n\n", repo)
 	rsi := RepoScanItem{}
 	col := b.db.C(repoCollection)
 	err := col.Find(bson.M{"repo": repo}).One(&rsi)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Scan results: %s", rsi.Results)
 	return rsi.Results, nil
 }
 
+// SaveRepoToDB save repo data.
+func (b *Storage) SaveRepoToDB(repo string, data []RepoScanResult) error {
+	log.Printf("\nSaving %q to db... \n\n", repo)
+	col := b.db.C(repoCollection)
+
+	rsi := &RepoScanItem{
+		Repo:    repo,
+		Results: data,
+	}
+	_, err := col.Upsert(
+		bson.M{"repo": repo},
+		bson.M{"$set": rsi},
+	)
+	if err != nil {
+		log.Printf("FAILED to save to db... %s \n\n", err)
+		return err
+	}
+	return nil
+}
