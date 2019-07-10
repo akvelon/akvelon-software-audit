@@ -2,9 +2,10 @@
 Scalable compliance and security audit for modern development.
 
 * license-audit-service - REST service for audit management of github repositories
-* ux - UI for interacting with Akvelon Audit Service
+* ux - UI for interacting with Akvelon Audit Service (powered by [Beego](https://beego.me/) framework)
+* [MongoDB](https://www.mongodb.com/) for persistant storage
 
-We use [Prometheus](https://prometheus.io/) for monitoring various metrics and [RabbitMQ](https://www.rabbitmq.com/) as a message broker for communication among services.
+We use [Prometheus](https://prometheus.io/) for monitoring metrics and [RabbitMQ](https://www.rabbitmq.com/) as a message broker for communication among services.
 
 Also we use [Jaeger](https://www.jaegertracing.io/) as an end-to-end distributed tracing tool.
 

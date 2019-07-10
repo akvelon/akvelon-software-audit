@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 
 services:
 
@@ -22,7 +22,7 @@ services:
     build:
       context: ./license-audit-service
     image: akv-audit-srv
-    container_name: akv-audit
+    container_name: akv-audit-srv
     environment:
       - JAEGER_SERVICE_NAME=akv-audit-jaeger
       - JAEGER_AGENT_HOST=jaeger
@@ -31,6 +31,7 @@ services:
       - 8000:8000
     depends_on:
       - rabbitmq
+      - audit-mongo
     restart: on-failure
 
   rabbitmq:
@@ -41,11 +42,6 @@ services:
       - 5672:5672
       - 15672:15672
     restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
 
   prometheus:
     image: prom/prometheus:v2.10.0
@@ -74,3 +70,14 @@ services:
       - 6832:6832/udp
       - 16686:16686
       - 14268:14268
+
+  audit-mongo:
+    image: 'mongo:3.4.21-xenial'
+    container_name: 'akv-audit-mongo'
+    ports:
+      - '27017:27017'
+    volumes:
+      - "mongodata:/data/db"
+
+volumes:
+  mongodata:

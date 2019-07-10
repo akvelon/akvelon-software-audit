@@ -17,6 +17,8 @@ const (
 	RepoBucket = "Repository"
 	// MetaBucket is the bucket containing meta info about db
 	MetaBucket = "Meta"
+
+	maxNumOfRecentItems = 5
 )
 
 // Storage keeps data in BoltDB
@@ -118,9 +120,9 @@ func (b *Storage) UpdateRecentlyViewed(repo string) error {
 		}
 
 		recent = append(recent, recentItem{Repo: repo})
-		if len(recent) > 5 {
-			// trim recent if it's grown to over 5
-			recent = (recent)[1:6]
+		if len(recent) > maxNumOfRecentItems {
+			// trim recent if it's grown to over maxNumOfRecentItems
+			recent = (recent)[1 : maxNumOfRecentItems+1]
 		}
 		b, err := json.Marshal(&recent)
 		if err != nil {

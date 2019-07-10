@@ -3,8 +3,8 @@ package main
 import (
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/http/rest"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/licanalize"
-	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/bolt"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/monitor"
+	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/mongo"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/tracing"
 
 	"flag"
@@ -32,8 +32,12 @@ func main() {
 
 	t, _ := tracing.InitTracer(os.Getenv("JAEGER_SERVICE_NAME"))
 
-	s := new(bolt.Storage)
-	s.InitStorage()
+	s := new(mongo.Storage)
+	err := s.InitStorage()
+	if err != nil {
+		log.Fatal("ERROR: could not init storage: ", err)
+	}
+
 	la := licanalize.NewService(s)
 	m := &monitor.Monitor{}
 

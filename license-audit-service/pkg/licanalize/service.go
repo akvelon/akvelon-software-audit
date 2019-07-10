@@ -1,12 +1,12 @@
 package licanalize
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/download/vcs"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/licanalize/boyterlc"
+	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/mongo"
 )
 
 // Service provides license analize operations.
@@ -14,7 +14,7 @@ type Service interface {
 	CheckHealth() bool
 	Scan(repo AnalizedRepo) error
 	GetRecent() ([]string, error)
-	GetRepoResultFromDB(repo string) ([]RepoScanResult, error)
+	GetRepoResultFromDB(repo string) ([]mongo.RepoScanResult, error)
 }
 
 type service struct {
@@ -26,8 +26,8 @@ type Repository interface {
 	InitStorage() error
 	GetRecentlyViewed() ([]string, error)
 	UpdateRecentlyViewed(repo string) error
-	SaveRepoToDB(key string, data []byte) error
-	GetRepoFromDB(repo string) ([]byte, error)
+	SaveRepoToDB(repo string, data []mongo.RepoScanResult) error
+	GetRepoFromDB(repo string) ([]mongo.RepoScanResult, error)
 }
 
 // NewService creates new service with the necessary dependencies.
@@ -49,22 +49,20 @@ func (s *service) Scan(repo AnalizedRepo) error {
 		return err
 	}
 
-	var res []boyterlc.LCScanResult
-	for _, result := range results {
-		res = append(res, boyterlc.LCScanResult{
-			File:       result.File,
-			License:    result.License,
-			Confidence: result.Confidence,
-			Size:       result.Size,
-		})
+	// convert to proper type TODO: move to converter package?
+	var recentRepos = make([]mongo.RepoScanResult, len(results))
+	var j = len(results) - 1
+	for _, r := range results {
+		recentRepos[j] = mongo.RepoScanResult{
+			File:       r.File,
+			License:    r.License,
+			Confidence: r.Confidence,
+			Size:       r.Size,
+		}
+		j--
 	}
 
-	resBytes, err := json.Marshal(res)
-	if err != nil {
-		return fmt.Errorf("could not marshal json: %v", err)
-	}
-
-	err = s.r.SaveRepoToDB(repo.URL, resBytes)
+	err = s.r.SaveRepoToDB(repo.URL, recentRepos)
 	if err != nil {
 		return fmt.Errorf("failed to save results to db: %v", err)
 	}
@@ -78,18 +76,13 @@ func (s *service) Scan(repo AnalizedRepo) error {
 }
 
 // GetRepoResultFromDB returns scan result from DB
-func (s *service) GetRepoResultFromDB(repo string) ([]RepoScanResult, error) {
-	b, err := s.r.GetRepoFromDB(repo)
+func (s *service) GetRepoResultFromDB(repo string) ([]mongo.RepoScanResult, error) {
+	results, err := s.r.GetRepoFromDB(repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get scan result from DB")
 	}
 
-	resp := []RepoScanResult{}
-	err = json.Unmarshal(b, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse JSON for %q in result", repo)
-	}
-	return resp, nil
+	return results, nil
 }
 
 // GetRecent returns top recent repos scanned

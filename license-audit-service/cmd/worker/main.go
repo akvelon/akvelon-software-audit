@@ -1,20 +1,25 @@
 package main
 
 import (
-	"log"
 	"akvelon/akvelon-software-audit/license-audit-service/pkg/licanalize"
-	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/bolt"
+	"akvelon/akvelon-software-audit/license-audit-service/pkg/storage/mongo"
+	"log"
+
 	"github.com/streadway/amqp"
 )
 
 const (
 	uXAuditQueueName = "audit-queue"
-	rabbitSrv = "amqp://guest:guest@rabbitmq:5672"
+	rabbitSrv        = "amqp://guest:guest@rabbitmq:5672"
 )
 
 func main() {
-	s := new(bolt.Storage)
-	s.InitStorage()
+	s := new(mongo.Storage)
+	err := s.InitStorage()
+	if err != nil {
+		log.Fatal("ERROR: could not init storage: ", err)
+	}
+
 	licAnalizer := licanalize.NewService(s)
 
 	conn, err := amqp.Dial(rabbitSrv)
@@ -57,6 +62,7 @@ func main() {
 				URL: string(d.Body),
 			})
 			if err != nil {
+				log.Println(err)
 				log.Printf("Failed to Scan repo %s", d.Body)
 			}
 		}
