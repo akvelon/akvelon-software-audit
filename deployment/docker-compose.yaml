@@ -1,10 +1,10 @@
-version: '3.7'
+version: '3'
 
 services:
 
   portal:
     build:
-      context: ./ux
+      context: ../ux
     image: akv-audit-ux
     container_name: akv-portal
     environment:
@@ -19,7 +19,7 @@ services:
 
   audit-srv:
     build:
-      context: ./license-audit-service
+      context: ../license-audit-service
     image: akv-audit-srv
     container_name: akv-audit-srv
     environment:
@@ -35,7 +35,7 @@ services:
 
   audit-worker:
     build:
-      context: ./license-audit-worker
+      context: ../license-audit-worker
     image: akv-audit-worker
     container_name: akv-audit-worker
     depends_on:
@@ -56,8 +56,8 @@ services:
     image: prom/prometheus:v2.10.0
     container_name: akv-prometheus
     volumes:
-      - ./prometheus/:/etc/prometheus/
-      - ./prometheus_data:/prometheus
+      - ../prometheus/:/etc/prometheus/
+      - ../prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -90,3 +90,4 @@ services:
 
 volumes:
   mongodata:
+  prometheusdata:

@@ -12,9 +12,9 @@ Also we use [Jaeger](https://www.jaegertracing.io/) as an end-to-end distributed
 
 ### Running With Docker
 
-Run `docker-compose up` to start services. Browse to http://localhost:777 to access portal.
+Run `docker-compose -f deployment/docker-compose.yaml up` to start services. Browse to http://localhost:777 to access portal.
 
-Run `docker-compose down` to stop services.
+Run `docker-compose -f deployment/docker-compose.yaml down` to stop services.
 
 ### Monitoring Data
 
