@@ -57,7 +57,7 @@ services:
     container_name: akv-prometheus
     volumes:
       - ../prometheus/:/etc/prometheus/
-      - ../prometheus_data:/prometheus
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -90,4 +90,5 @@ services:
 
 volumes:
   mongodata:
-  prometheusdata:
+  prometheus_data:
+  
